@@ -50,7 +50,7 @@ In general PostgreSQL version `X.Y` is mapped to port `100XY`.
 
 ### What databases and users does it setup?
 
-A test user (with name "test" and password "test") and the databases listed below are created for *each* PosgreSQL version that is installed. This matches up with the default configuration of the JDBC drivers `build.properties` and `build.xml` files.
+A test user (with name "test" and password "test") and the databases listed below are created for *each* PostgreSQL version that is installed. This matches up with the default configuration of the JDBC drivers `build.properties` and `build.xml` files.
 
 The following databases are created (each is used somewhere in the JDBC driver tests):
 
@@ -89,7 +89,7 @@ Or for example to connect to the "hostssldb" database on the 9.3 server as the u
     
     hostssldb=>
 
-Remeber that the password for the "test" user is "test".
+Remember that the password for the "test" user is "test".
 
 ### How do I use it to test the JDBC driver?
 
@@ -139,9 +139,11 @@ I was adding some SSL related tests to the driver and getting an environment to 
 
 VMs are great for testing and it makes it *much* easier for someone new to get involved in adding to a project.
 
-### Why does the Vagrantfile share the entire project with the VM? (*e.g. why not just a sub directory*)?
+### Why does the Vagrantfile share the entire project with the VM?
 
-This was all designed to eventually be merged into the JDBC driver project itself. The `certdir` directory is a clone of the same directory (at the same relative level) as the JDBC driver. This was done so that after this is merged in to the JDBC driver no code change is required to the JDBC driver tests (since the certs will still be in the same place).
+Or alternatively, why not just a sub directory?
+
+This was all designed to eventually be merged into the JDBC driver project itself. The `certdir` directory is a clone of the same directory (at the same relative path) as the JDBC driver. This was done so that after this is merged in to the JDBC driver no code change is required to the JDBC driver tests (since the certs will still be in the same place).
 
 
 ### Why isn't this part of the driver project itself?
