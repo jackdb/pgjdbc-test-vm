@@ -36,19 +36,29 @@ do
 
   PG_CONF="/etc/postgresql/$PG_VERSION/main/postgresql.conf"
   PG_HBA="/etc/postgresql/$PG_VERSION/main/pg_hba.conf"
-  PG_DIR="/var/lib/postgresql/$PG_VERSION/main/"
+  PG_DIR="/var/lib/postgresql/$PG_VERSION/main"
 
   # Edit listen address to '*':
   sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" "$PG_CONF"
+
+  # Add SSL root cert:
   sed -i "s/#ssl_ca_file = ''/ssl_ca_file = 'root.crt'/" "$PG_CONF"
+
+  # Comment out SSL key/cert so defaults are used (9.2 and 9.3 point directly to snake oil):
+  sed -i -e 's/^ssl_cert_file = /#\0/' "$PG_CONF"
+  sed -i -e 's/^ssl_key_file = /#\0/' "$PG_CONF"
 
   # Update HBA:
   cp "${SETUP_DIR}/pg_hba.conf" "$PG_HBA"
 
-  # SSL Setup:
-  cp "${SERVER_SSL_DIR}/root.crt" "$PG_DIR"
-  cp "${SERVER_SSL_DIR}/server.crt" "$PG_DIR"
-  cp "${SERVER_SSL_DIR}/server.key" "$PG_DIR"
+  # Copy over SSL root cert, server cert, and server key:
+  for SSL_FILE in root.crt server.crt server.key
+  do
+    TARGET_SSL_FILE="${PG_DIR}/${SSL_FILE}"
+    cp "${SERVER_SSL_DIR}/${SSL_FILE}" "$TARGET_SSL_FILE"
+    chown postgres:postgres "$TARGET_SSL_FILE"
+    chmod 600 "$TARGET_SSL_FILE"
+  done
 
   echo "Setting up test users and databases for $PG_VERSION"
   su - postgres -c "${SETUP_DIR}/pg-setup-${PG_VERSION}.sh"
