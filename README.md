@@ -63,7 +63,7 @@ The following databases are created (each is used somewhere in the JDBC driver t
 
 ### How do I connect to the version `X.Y` PostgreSQL server?
 
-Once the VM is started it the port forwarding will make it act like the PostgreSQL servers are installed on your desktop and available at the forwarded ports. If you have `psql` installed then just specify the port number for the server you'd like to connect to.
+Once the VM is started the port forwarding will make it act like the PostgreSQL servers are installed on your desktop and available at the forwarded ports. If you have `psql` installed then just specify the port number for the server you'd like to connect to.
 
 For example to connect to the "test" database on the 8.4 server as the user "test":
 
