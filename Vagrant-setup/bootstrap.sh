@@ -55,6 +55,9 @@ do
   for SSL_FILE in root.crt server.crt server.key
   do
     TARGET_SSL_FILE="${PG_DIR}/${SSL_FILE}"
+    # Remove the old symlink:
+    rm "$TARGET_SSL_FILE"
+    # Copy over the cert:
     cp "${SERVER_SSL_DIR}/${SSL_FILE}" "$TARGET_SSL_FILE"
     chown postgres:postgres "$TARGET_SSL_FILE"
     chmod 600 "$TARGET_SSL_FILE"
