@@ -56,7 +56,7 @@ do
   do
     TARGET_SSL_FILE="${PG_DIR}/${SSL_FILE}"
     # Remove the old symlink:
-    rm "$TARGET_SSL_FILE"
+    rm  -f "$TARGET_SSL_FILE"
     # Copy over the cert:
     cp "${SERVER_SSL_DIR}/${SSL_FILE}" "$TARGET_SSL_FILE"
     chown postgres:postgres "$TARGET_SSL_FILE"
