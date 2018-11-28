@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+# Convenience wrapper to connect to a PostgreSQL cluster in the VM.
+# Defaults to connecting as the user "test" with password "test".
+# Override with PGUSER and PGPASSWORD environment variables.
+#
+# Usage: psql <version> [... psql options]
+#
+# Examples:
+#
+#   bin/psql 9.3
+#   bin/psql 10 hostdb
+#   PGSSLMODE=disable bin/psql 11 hostnossldb
+
+err () {
+    echo "$@" 1>&2
+    exit 1
+}
+
+main () {
+    local pg_version="${1:-}"
+    [[ ! -z "${pg_version}" ]] || err "Usage: $0 <pg-version> [psql-options ...]"
+    local PG_VERSION_REGEX='^(1[0-9])|(9.[3-6])$'
+    [[ "${pg_version}" =~ $PG_VERSION_REGEX ]] || err "Invalid PostgreSQL version: ${pg_version}"
+    shift
+
+    local pg_port
+    pg_port="100$(sed 's/\.//' <<< "${pg_version}")"
+    PGUSER=${PGUSER:-test} \
+      PGPASSWORD=${PGPASSWORD:-test} \
+      exec psql -h localhost -p "${pg_port}" "$@"
+}
+
+main "$@"

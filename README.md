@@ -1,3 +1,5 @@
+# PGJDBC Test VM
+
 ### What is it?
 
 A Vagrant configuration for spinning up a VM with *multiple* PostgreSQL installations for testing the [PostgreSQL JDBC driver](https://github.com/pgjdbc/pgjdbc).
@@ -24,15 +26,15 @@ To destroy the VM:
 
 When it is first started up the VM:
 
-1. Setups up a base VM with Ubuntu 12.04 
+1. Setups up a base VM with Ubuntu 18.04 
 1. Adds the PostgreSQL Global Development Group (PGDG) [apt repo](http://wiki.postgresql.org/wiki/Apt)
 1. Updates all packages
 1. Installs postgresql-${PG_VERSION} and postgresql-contrib-${PG_VERSION}
 1. Updates the `postgresql.conf` file to change `listen_address = '*'`
-1. Updates `pg_hba.conf`
+1. Updates `pg_hba.conf` to allow inbound connections required by pgjdbc tests.
 1. Copies the SSL config files (`root.crt`, `server.crt`, and `server.key`)
-1. Creates sample users and databases
-1. Installs the `sslinfo` extension (either via `CREATE EXTENSION ...` or manually for earlier versions)
+1. Creates sample users and databases matching those used by pgjdbc.
+1. Installs the `sslinfo` and `hstore` extensions (via `CREATE EXTENSION ...`)
 
 This is done for each version of PostgreSQL that is installed (see next section for versions).
 
@@ -40,13 +42,16 @@ The Vagrantfile also sets up port forwarding for each PostgreSQL installation to
 
 ### What versions of PostgreSQL does it install?
 
- * 8.4 - mapped to port `10084`
- * 9.0 - mapped to port `10090`
- * 9.1 - mapped to port `10091`
- * 9.2 - mapped to port `10092`
  * 9.3 - mapped to port `10093`
+ * 9.4 - mapped to port `10094`
+ * 9.5 - mapped to port `10095`
+ * 9.6 - mapped to port `10096`
+ * 10 - mapped to port `10010`
+ * 11 - mapped to port `10011`
 
 In general PostgreSQL version `X.Y` is mapped to port `100XY`.
+
+The bootstrap script for the VM analyzes the available set of packages to determine which ones to install. The script itself should not need to be updated as new versions are released however the port forwarding would need to be updated to reflect them.
 
 ### What databases and users does it setup?
 
@@ -91,47 +96,33 @@ Or for example to connect to the "hostssldb" database on the 9.3 server as the u
 
 Remember that the password for the "test" user is "test".
 
+The bin/ directory contains a wrapper for psql that connects to the test database for a given PostgreSQL version:
+
+
+    $ bin/psql 10
+    psql (11.1 (Ubuntu 11.1-1.pgdg18.04+1), server 10.6 (Ubuntu 10.6-1.pgdg18.04+1))
+    SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
+    Type "help" for help.
+
+    test=> 
+
+
 ### How do I use it to test the JDBC driver?
 
 1. Clone this repo
 1. Spin up the VM (see above)
 1. Clone the [PostgreSQL JDBC driver](https://github.com/pgjdbc/pgjdbc).
-1. Edit the file `build.properties` and change `def_pgport=10093`
+1. Add a `build.local.properties` file and change the port numbers to point to the version of PostgreSQL you want to test against (ex: 10010 for v10)
 
-    **Note:** To test against a different version of PostgreSQL just change the port. For example using `10084` would test against version 8.4.
+    **Note:** To test against a different version of PostgreSQL just change the port. For example using `10096` would test against version 9.6.
 
-1. Build and test the JDBC driver using `ant`:
+1. Build and test the JDBC driver using `mvn`:
 
-        $ ant test
+        $ mvn clean compile test
 
-To run the SSL related tests edit the file `ssltest.properties`:
+To run the SSL related tests copy the file `ssltest.properties` to `ssltest.local.properties` and enable the SSL test property.
 
-1. Uncomment the SSL JDBC urls you'd like to test
-1. Update the port for the server you want to test (ex: use 10084 for the 8.4 server, 10093 for the 9.3 server, etc).
-
-The resulting file will look something like this (example for version 8.4):
-
-    sslhostnossl8=jdbc:postgresql://localhost:10084/hostnossldb?sslpassword=sslpwd
-    sslhostnossl8prefix=
-      
-    sslhostgh8=jdbc:postgresql://localhost:10084/hostdb?sslpassword=sslpwd
-    sslhostgh8prefix=
-    sslhostbh8=jdbc:postgresql://127.0.0.1:10084/hostdb?sslpassword=sslpwd
-    sslhostbh8prefix=
-    
-    sslhostsslgh8=jdbc:postgresql://localhost:10084/hostssldb?sslpassword=sslpwd
-    sslhostsslgh8prefix=
-    sslhostsslbh8=jdbc:postgresql://127.0.0.1:10084/hostssldb?sslpassword=sslpwd
-    sslhostsslbh8prefix=
-    
-    sslhostsslcertgh8=jdbc:postgresql://localhost:10084/hostsslcertdb?sslpassword=sslpwd
-    sslhostsslcertgh8prefix=
-    sslhostsslcertbh8=jdbc:postgresql://127.0.0.1:10084/hostsslcertdb?sslpassword=sslpwd
-    sslhostsslcertbh8prefix=
-    
-    sslcertgh8=jdbc:postgresql://localhost:10084/certdb?sslpassword=sslpwd
-    sslcertgh8prefix=
-    sslcertbh8=jdbc:postgresql://127.0.0.1:10084/certdb?sslpassword=sslpwd
+    **Note:** The test VM uses the same SSL certificates in certdir as the pgjdbc repo.
 
 ### Why did you make this?
 
