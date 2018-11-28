@@ -136,7 +136,10 @@ Or alternatively, why not just a sub directory?
 
 This was all designed to eventually be merged into the JDBC driver project itself. The `certdir` directory is a clone of the same directory (at the same relative path) as the JDBC driver. This was done so that after this is merged in to the JDBC driver no code change is required to the JDBC driver tests (since the certs will still be in the same place).
 
-
 ### Why isn't this part of the driver project itself?
 
 Hopefully it will be.
+
+### Can I use this? What license is it?
+
+Yes. See [LICENSE](LICENSE) for details.
