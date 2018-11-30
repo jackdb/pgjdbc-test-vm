@@ -1,12 +1,13 @@
 # PGJDBC Test VM
 
-### What is it?
+### What is the PGJDBC Test VM?
 
 A Vagrant configuration for spinning up a VM with *multiple* PostgreSQL installations for testing the [PostgreSQL JDBC driver](https://github.com/pgjdbc/pgjdbc).
 
 ### How do I use it?
 
-First make sure you have [Vagrant](http://www.vagrantup.com/) installed. 
+Clone this repo.
+Make sure you have [Vagrant](http://www.vagrantup.com/) installed. 
 
 To startup the VM:
 
@@ -21,6 +22,70 @@ To shutdown the VM:
 To destroy the VM:
 
     $ vagrant destroy
+
+### How do I connect to the version `X.Y` PostgreSQL server?
+
+To get the IP address of the VM:
+```sh
+$ vagrant ssh
+vagrant@ubuntu-bionic:~$ ifconfig
+```
+
+Note down the IP address. Make sure you can ping it from your host machine.
+
+Once the VM is started the port forwarding will make it act like the PostgreSQL servers are installed on your desktop and available at the forwarded ports. If you have `psql` installed then just specify the port number for the server you'd like to connect to.
+
+For example to connect to the "test" database on the 9.3 server as the user "test" (change the host IP address):
+
+```
+$ psql -h 172.28.128.3 -p 10093 test test
+Password for user test: 
+psql (9.1.9, server 9.3.0)
+WARNING: psql version 9.1, server version 9.3.
+         Some psql features might not work.
+SSL connection (cipher: (NONE), bits: -1)
+Type "help" for help.
+
+test=>
+```
+
+Remember that the password for the "test" user is "test".
+
+The bin/ directory contains a wrapper for psql that connects to the test database for a given PostgreSQL version:
+
+```
+$ bin/psql 10
+psql (11.1 (Ubuntu 11.1-1.pgdg18.04+1), server 10.6 (Ubuntu 10.6-1.pgdg18.04+1))
+SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+test=> 
+```
+
+### How do I use it to test the JDBC driver?
+
+1. Clone the [PostgreSQL JDBC driver](https://github.com/pgjdbc/pgjdbc).
+
+2. Add a `build.local.properties` file and add
+```
+server=172.28.128.3
+port=10011
+```
+Change the IP address, and port numbers to point to the version of PostgreSQL you want to test against (ex: 10010 for v10)
+
+   **Note:** To test against a different version of PostgreSQL just change the port. For example using `10096` would test against version 9.6.
+
+3. Build and test the JDBC driver using `mvn`:
+
+   ```
+   $ mvn clean compile test
+   ```
+
+To run the SSL related tests copy the file `ssltest.properties` to `ssltest.local.properties` and enable the SSL test property.
+
+```
+**Note:** The test VM uses the same SSL certificates in certdir as the pgjdbc repo.
+```
 
 ### What does it do?
 
@@ -65,64 +130,6 @@ The following databases are created (each is used somewhere in the JDBC driver t
 1. hostnossldb 
 1. hostsslcertdb 
 1. certdb 
-
-### How do I connect to the version `X.Y` PostgreSQL server?
-
-Once the VM is started the port forwarding will make it act like the PostgreSQL servers are installed on your desktop and available at the forwarded ports. If you have `psql` installed then just specify the port number for the server you'd like to connect to.
-
-For example to connect to the "test" database on the 8.4 server as the user "test":
-
-    $ psql -h localhost -p 10084 test test
-    Password for user test: 
-    psql (9.1.9, server 8.4.17)
-    WARNING: psql version 9.1, server version 8.4.
-             Some psql features might not work.
-    SSL connection (cipher: (NONE), bits: -1)
-    Type "help" for help.
-    
-    test=> 
-
-Or for example to connect to the "hostssldb" database on the 9.3 server as the user "test":
-
-    $ psql -h localhost -p 10093 hostssldb test
-    Password for user test: 
-    psql (9.1.9, server 9.3.0)
-    WARNING: psql version 9.1, server version 9.3.
-             Some psql features might not work.
-    SSL connection (cipher: (NONE), bits: -1)
-    Type "help" for help.
-    
-    hostssldb=>
-
-Remember that the password for the "test" user is "test".
-
-The bin/ directory contains a wrapper for psql that connects to the test database for a given PostgreSQL version:
-
-
-    $ bin/psql 10
-    psql (11.1 (Ubuntu 11.1-1.pgdg18.04+1), server 10.6 (Ubuntu 10.6-1.pgdg18.04+1))
-    SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
-    Type "help" for help.
-
-    test=> 
-
-
-### How do I use it to test the JDBC driver?
-
-1. Clone this repo
-1. Spin up the VM (see above)
-1. Clone the [PostgreSQL JDBC driver](https://github.com/pgjdbc/pgjdbc).
-1. Add a `build.local.properties` file and change the port numbers to point to the version of PostgreSQL you want to test against (ex: 10010 for v10)
-
-    **Note:** To test against a different version of PostgreSQL just change the port. For example using `10096` would test against version 9.6.
-
-1. Build and test the JDBC driver using `mvn`:
-
-        $ mvn clean compile test
-
-To run the SSL related tests copy the file `ssltest.properties` to `ssltest.local.properties` and enable the SSL test property.
-
-    **Note:** The test VM uses the same SSL certificates in certdir as the pgjdbc repo.
 
 ### Why did you make this?
 
