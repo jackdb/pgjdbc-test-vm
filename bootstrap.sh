@@ -109,6 +109,8 @@ main () {
 
     # Mark VM as provisioned so we do not rerun next time
     date > /etc/vm_provisioned_at
+
+    log "Installation completed successfully."
 }
 
 main "$@"
