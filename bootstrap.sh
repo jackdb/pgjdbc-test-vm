@@ -14,6 +14,7 @@ gen_pg_hba () {
     cat << _EOF_
 # IPv4 connections:
 host         test           test        0.0.0.0/0     md5
+host         test           test_super  0.0.0.0/0     md5
 host         hostdb         all         0.0.0.0/0     md5
 hostnossl    hostnossldb    all         0.0.0.0/0     md5
 hostssl      hostssldb      all         0.0.0.0/0     md5    clientcert=0
@@ -94,6 +95,7 @@ main () {
 
         # Create test user
         psql_super --cluster "${pg_version}/main" -c "CREATE USER test WITH PASSWORD 'test'"
+        psql_super --cluster "${pg_version}/main" -c "CREATE USER test_super WITH SUPERUSER PASSWORD 'test'"
         # Create testing databases
         for db_name in ${TEST_DB_NAMES[*]}
         do
