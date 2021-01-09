@@ -17,9 +17,23 @@ host         test           test        0.0.0.0/0     md5
 host         test           test_super  0.0.0.0/0     md5
 host         hostdb         all         0.0.0.0/0     md5
 hostnossl    hostnossldb    all         0.0.0.0/0     md5
+_EOF_
+}
+
+
+gen_pg_hba_ssl () {
+    cat << _EOF_
+# Mandatory SSL:
 hostssl      hostssldb      all         0.0.0.0/0     md5    clientcert=0
 hostssl      hostsslcertdb  all         0.0.0.0/0     md5    clientcert=1
 hostssl      certdb         all         0.0.0.0/0     cert
+_EOF_
+}
+
+gen_pg_hba_scram () {
+    cat << _EOF_
+# SCRAM:
+host         test_scram     test_scram  0.0.0.0/0     scram-sha-256
 _EOF_
 }
 
@@ -35,6 +49,29 @@ get_pg_versions () {
     apt-cache search postgresql- |
       awk '/^postgresql-([1-9][0-9]|9\.[0-9]) / { print substr($1, length("postgresql-") + 1) }' |
       sort -n
+}
+
+is_pg_version_at_least () {
+    local pg_version="${1}"
+    local min_version="${2}"
+    return "$(
+        awk \
+          -v "version="${pg_version} \
+          -v "min_version=${min_version}" \
+          'BEGIN { print !(version >= min_version) }'
+        )"
+}
+
+wait_for_postgres () {
+    local pg_version="${1}"
+    for i in {1..60}
+    do
+        if pg_isready --cluster "${pg_version}/main"; then
+            break
+        fi
+        log "Waiting for PostgreSQL server version ${pg_version} to start"
+        sleep 1
+    done
 }
 
 main () {
@@ -57,6 +94,9 @@ main () {
     # Will generate a bash array with values: 9.3 9.4 9.5 9.6 10 11 ...
     local pg_versions
     readarray pg_versions < <(get_pg_versions)
+
+    # First install latest client so that we have things like pg_isready
+    apt-get -y install postgresql-client-${pg_versions[-1]}
 
     # Add our custom certs to a central location
     local PGJDBC_SSL_DIR="/vagrant/certdir/server"
@@ -86,16 +126,28 @@ main () {
             chmod 600 "${PGJDBC_SSL_DIR}"/*.*
         fi
 
-        # Change SSL certs and root CA to point to our common values
-        echo "ssl_cert_file = '${PGJDBC_SSL_DIR}/server.crt'" >> "${pg_conf}"
-        echo "ssl_key_file = '${PGJDBC_SSL_DIR}/server.key'" >> "${pg_conf}"
-        echo "ssl_ca_file = '${PGJDBC_SSL_DIR}/root.crt'" >> "${pg_conf}"
-
         # Add custom HBA settings to allow inbound connections
         gen_pg_hba >> "${pg_hba}"
 
+        # Change SSL certs and root CA to point to our common values
+        if is_pg_version_at_least "${pg_version}" "9.3" ; then
+            # Add SSL settings to postgresql.conf
+            echo "ssl_cert_file = '${PGJDBC_SSL_DIR}/server.crt'" >> "${pg_conf}"
+            echo "ssl_key_file = '${PGJDBC_SSL_DIR}/server.key'" >> "${pg_conf}"
+            echo "ssl_ca_file = '${PGJDBC_SSL_DIR}/root.crt'" >> "${pg_conf}"
+            # Add SSL entries to HBA
+            gen_pg_hba_ssl >> "${pg_hba}"
+        fi
+
+        if is_pg_version_at_least "${pg_version}" "10" ; then
+            # Add SCRAM entries to HBA
+            gen_pg_hba_scram >> "${pg_hba}"
+        fi
+
         # Restart cluster for changes to take effect
         /etc/init.d/postgresql restart "${pg_version}"
+        # Wait for the server to actual start
+        wait_for_postgres "${pg_version}"
 
         # Create test user
         psql_super --cluster "${pg_version}/main" -c "CREATE USER test WITH PASSWORD 'test'"
@@ -104,9 +156,23 @@ main () {
         for db_name in ${TEST_DB_NAMES[*]}
         do
             psql_super --cluster "${pg_version}/main" -c "CREATE DATABASE ${db_name} WITH OWNER test"
-            psql_super --cluster "${pg_version}/main" -d "${db_name}" -c "CREATE EXTENSION sslinfo"
-            psql_super --cluster "${pg_version}/main" -d "${db_name}" -c "CREATE EXTENSION hstore"
+            if is_pg_version_at_least "${pg_version}" "9.1" ; then
+                psql_super --cluster "${pg_version}/main" -d "${db_name}" -c "CREATE EXTENSION sslinfo"
+                psql_super --cluster "${pg_version}/main" -d "${db_name}" -c "CREATE EXTENSION hstore"
+            fi
         done
+
+        if is_pg_version_at_least "${pg_version}" "10" ; then
+            # Create SCRAM users
+            psql_super --cluster "${pg_version}/main" \
+                -c "SET password_encryption = 'scram-sha-256'" \
+                -c "CREATE USER test_scram WITH PASSWORD 'test'" \
+                -c "CREATE DATABASE test_scram WITH OWNER test_scram"
+            psql_super --cluster "${pg_version}/main" \
+                -d "test_scram" \
+                -c "CREATE EXTENSION sslinfo" \
+                -c "CREATE EXTENSION hstore"
+        fi
 
         log "Installed PostgreSQL version ${pg_version} listening on port ${pg_port}"
     done
