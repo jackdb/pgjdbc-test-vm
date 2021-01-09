@@ -99,12 +99,16 @@ The Vagrantfile also sets up port forwarding for each PostgreSQL installation to
 
 ### What versions of PostgreSQL does it install?
 
+On first boot it installs every version of PostgreSQL available in the apt repos.
+
  * 9.3 - mapped to port `10093`
  * 9.4 - mapped to port `10094`
  * 9.5 - mapped to port `10095`
  * 9.6 - mapped to port `10096`
  * 10 - mapped to port `10010`
  * 11 - mapped to port `10011`
+ * 12 - mapped to port `10012`
+ * 13 - mapped to port `10013`
 
 In general PostgreSQL version `X.Y` is mapped to port `100XY`.
 
