@@ -31,6 +31,12 @@ psql_super () {
     sudo -u postgres -i -- psql "$@"
 }
 
+get_pg_versions () {
+    apt-cache search postgresql- |
+      awk '/^postgresql-([1-9][0-9]|9\.[0-9]) / { print substr($1, length("postgresql-") + 1) }' |
+      sort -n
+}
+
 main () {
     if [[ -f /etc/vm_provisioned_at ]]; then
         log "VM is already provisioned"
@@ -49,15 +55,13 @@ main () {
 
     # Dynamically determine all available versions of PostgreSQL to install
     # Will generate a bash array with values: 9.3 9.4 9.5 9.6 10 11 ...
-    readarray PG_VERSIONS < <(
-        apt-cache search postgresql- |
-          awk '/^postgresql-([1-9][0-9]|9\.[0-9]) / { print substr($1, length("postgresql-") + 1) }' |
-          sort -n
-    )
+    local pg_versions
+    readarray pg_versions < <(get_pg_versions)
+
     # Add our custom certs to a central location
     local PGJDBC_SSL_DIR="/vagrant/certdir/server"
 
-    for pg_version in ${PG_VERSIONS[*]}
+    for pg_version in ${pg_versions[*]}
     do
         apt-get -y install \
             "postgresql-${pg_version}" \
