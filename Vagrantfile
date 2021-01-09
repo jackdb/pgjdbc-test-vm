@@ -15,4 +15,12 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 10096, host: 10096
   config.vm.network "forwarded_port", guest: 10010, host: 10010
   config.vm.network "forwarded_port", guest: 10011, host: 10011
+  config.vm.network "forwarded_port", guest: 10012, host: 10012
+  config.vm.network "forwarded_port", guest: 10013, host: 10013
+  config.vm.network "forwarded_port", guest: 10014, host: 10014
+  config.vm.network "forwarded_port", guest: 10015, host: 10015
+  config.vm.network "forwarded_port", guest: 10016, host: 10016
+  config.vm.network "forwarded_port", guest: 10017, host: 10017
+  config.vm.network "forwarded_port", guest: 10018, host: 10018
+  config.vm.network "forwarded_port", guest: 10019, host: 10019
 end
